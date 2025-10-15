@@ -22,9 +22,6 @@
     "@ag-ui/langgraph": "^0.0.18",
     "@copilotkit/react-core": "latest",
     "@copilotkit/react-ui": "latest",
-    "@copilotkit/runtime": "file:../CopilotKit/CopilotKit/packages/runtime",
-    "@copilotkit/runtime-client-gql": "file:../CopilotKit/CopilotKit/packages/runtime-client-gql",
-    "@copilotkit/shared": "file:../CopilotKit/CopilotKit/packages/shared",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-dropdown-menu": "^2.1.6",
     "@radix-ui/react-slot": "^1.1.2",
@@ -36,17 +33,19 @@
     "lucide-react": "^0.477.0",
     "next": "15.1.6",
     "next-themes": "^0.4.6",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.4"
   },
+  "peerDependencies": {
+    "react": "^18 || ^19 || ^19.0.0-rc",
+    "react-dom": "^18 || ^19 || ^19.0.0-rc"
+  },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18.2.5",
+    "@types/react-dom": "^18.2.5",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.2",
     "eslint": "^8",

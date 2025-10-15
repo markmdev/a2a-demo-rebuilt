@@ -78,6 +78,11 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
       // Process messages sequentially to avoid race conditions
       const syncMessages = async () => {
         for (const msg of visibleMessages) {
+          // Only process TextMessages (which have content property)
+          if (!msg.isTextMessage()) {
+            continue;
+          }
+
           const lastSavedContent = savedMessagesRef.current.get(msg.id);
 
           // Save if: (1) new message OR (2) content changed (streaming update)

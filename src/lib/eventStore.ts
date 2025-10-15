@@ -62,7 +62,7 @@ class EventStore {
     conversationEvents[eventIndex] = {
       ...conversationEvents[eventIndex],
       ...updates,
-    };
+    } as Event;
 
     return true;
   }
