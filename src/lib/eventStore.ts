@@ -16,10 +16,34 @@ class EventStore {
   private events: Map<string, Event[]> = new Map();
 
   /**
+   * Find an event by message ID (for USER_MESSAGE and ASSISTANT_MESSAGE events)
+   * @returns The event if found, undefined otherwise
+   */
+  private findEventByMessageId(conversationId: string, messageId: string): Event | undefined {
+    const conversationEvents = this.events.get(conversationId) || [];
+    return conversationEvents.find(
+      (event) =>
+        (event.type === EventType.USER_MESSAGE || event.type === EventType.ASSISTANT_MESSAGE) &&
+        event.messageId === messageId
+    );
+  }
+
+  /**
    * Add an event to a conversation
+   * Automatically deduplicates USER_MESSAGE and ASSISTANT_MESSAGE events by messageId
    */
   addEvent(conversationId: string, event: Event): void {
     const conversationEvents = this.events.get(conversationId) || [];
+
+    // Deduplicate USER_MESSAGE and ASSISTANT_MESSAGE events by messageId
+    if (event.type === EventType.USER_MESSAGE || event.type === EventType.ASSISTANT_MESSAGE) {
+      const existingEvent = this.findEventByMessageId(conversationId, event.messageId);
+      if (existingEvent) {
+        // Event with this messageId already exists, skip adding
+        return;
+      }
+    }
+
     conversationEvents.push(event);
     this.events.set(conversationId, conversationEvents);
   }

@@ -75,53 +75,58 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
 
     // Sync messages to server when content changes (detects streaming updates)
     useEffect(() => {
-      visibleMessages.forEach(async (msg) => {
-        const lastSavedContent = savedMessagesRef.current.get(msg.id);
+      // Process messages sequentially to avoid race conditions
+      const syncMessages = async () => {
+        for (const msg of visibleMessages) {
+          const lastSavedContent = savedMessagesRef.current.get(msg.id);
 
-        // Save if: (1) new message OR (2) content changed (streaming update)
-        if (lastSavedContent !== msg.content) {
-          // Skip empty assistant messages (streaming placeholders that get replaced)
-          if (msg.role === "assistant" && msg.content === "") {
-            return;
-          }
+          // Save if: (1) new message OR (2) content changed (streaming update)
+          if (lastSavedContent !== msg.content) {
+            // Skip empty assistant messages (streaming placeholders that get replaced)
+            if (msg.role === "assistant" && msg.content === "") {
+              continue;
+            }
 
-          const message: Message = {
-            id: msg.id,
-            role: msg.role as "user" | "assistant",
-            content: msg.content,
-          };
+            const message: Message = {
+              id: msg.id,
+              role: msg.role as "user" | "assistant",
+              content: msg.content,
+            };
 
-          await upsertMessage(conversation.id, message);
-          savedMessagesRef.current.set(msg.id, msg.content);
+            await upsertMessage(conversation.id, message);
+            savedMessagesRef.current.set(msg.id, msg.content);
 
-          // Log or update events
-          if (msg.content.trim()) {
-            if (msg.role === "user") {
-              // User messages are logged once (they don't stream)
-              if (!messageEventIdsRef.current.has(msg.id)) {
-                const eventId = await logUserMessage(conversation.id, msg.id, msg.content);
-                if (eventId) {
-                  messageEventIdsRef.current.set(msg.id, eventId);
+            // Log or update events
+            if (msg.content.trim()) {
+              if (msg.role === "user") {
+                // User messages are logged once (they don't stream)
+                if (!messageEventIdsRef.current.has(msg.id)) {
+                  const eventId = await logUserMessage(conversation.id, msg.id, msg.content);
+                  if (eventId) {
+                    messageEventIdsRef.current.set(msg.id, eventId);
+                  }
                 }
-              }
-            } else if (msg.role === "assistant") {
-              // Assistant messages: create event on first appearance, update on subsequent changes
-              const existingEventId = messageEventIdsRef.current.get(msg.id);
+              } else if (msg.role === "assistant") {
+                // Assistant messages: create event on first appearance, update on subsequent changes
+                const existingEventId = messageEventIdsRef.current.get(msg.id);
 
-              if (existingEventId) {
-                // Update existing event with new content (streaming update)
-                await updateAssistantMessage(conversation.id, existingEventId, msg.content);
-              } else {
-                // Create new event for this message
-                const eventId = await logAssistantMessage(conversation.id, msg.id, msg.content);
-                if (eventId) {
-                  messageEventIdsRef.current.set(msg.id, eventId);
+                if (existingEventId) {
+                  // Update existing event with new content (streaming update)
+                  await updateAssistantMessage(conversation.id, existingEventId, msg.content);
+                } else {
+                  // Create new event for this message
+                  const eventId = await logAssistantMessage(conversation.id, msg.id, msg.content);
+                  if (eventId) {
+                    messageEventIdsRef.current.set(msg.id, eventId);
+                  }
                 }
               }
             }
           }
         }
-      });
+      };
+
+      syncMessages();
     }, [visibleMessages, conversation, upsertMessage, logUserMessage, logAssistantMessage, updateAssistantMessage]);
 
     // Register A2A message visualizer (renders green/blue communication boxes)
