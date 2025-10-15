@@ -151,6 +151,19 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
         throw new Error("Failed to upsert message");
       }
 
+      const data = await response.json();
+
+      // Update the local conversation's messageCount only if this was a new message
+      if (data.isNewMessage) {
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === conversationId
+              ? { ...conv, messageCount: conv.messageCount + 1 }
+              : conv
+          )
+        );
+      }
+
       return true;
     } catch (err) {
       console.error("Error upserting message:", err);

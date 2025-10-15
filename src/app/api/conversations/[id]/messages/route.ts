@@ -52,17 +52,29 @@ export async function POST(
       return NextResponse.json({ success: true, count: body.messages.length });
     } else if (body.message) {
       // Use upsert if requested (for streaming messages), otherwise add
-      const success = body.upsert
-        ? conversationStore.upsertMessage(id, body.message)
-        : conversationStore.addMessage(id, body.message);
-
-      if (!success) {
-        return NextResponse.json(
-          { error: "Conversation not found" },
-          { status: 404 }
-        );
+      if (body.upsert) {
+        const result = conversationStore.upsertMessage(id, body.message);
+        if (!result.success) {
+          return NextResponse.json(
+            { error: "Conversation not found" },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          message: body.message,
+          isNewMessage: result.isNewMessage
+        });
+      } else {
+        const success = conversationStore.addMessage(id, body.message);
+        if (!success) {
+          return NextResponse.json(
+            { error: "Conversation not found" },
+            { status: 404 }
+          );
+        }
+        return NextResponse.json({ success: true, message: body.message });
       }
-      return NextResponse.json({ success: true, message: body.message });
     } else {
       return NextResponse.json(
         { error: "Invalid request body. Expected 'message' or 'messages' field" },

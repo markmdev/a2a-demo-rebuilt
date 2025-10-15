@@ -4,6 +4,7 @@ import Sidebar from "@/components/Sidebar";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { AgentCard } from "@/lib/agentCard";
+import { PRECREATED_AGENTS, PrecreatedAgent } from "@/lib/precreatedAgents";
 
 export default function AgentsPage() {
   const pathname = usePathname();
@@ -13,6 +14,7 @@ export default function AgentsPage() {
   const [newAgentUrl, setNewAgentUrl] = useState("");
   const [validatingAgent, setValidatingAgent] = useState(false);
   const [error, setError] = useState("");
+  const [addingAgentId, setAddingAgentId] = useState<string | null>(null);
 
   // Fetch agents from API
   const fetchAgents = async () => {
@@ -95,6 +97,37 @@ export default function AgentsPage() {
     } catch (err) {
       console.error("Failed to remove agent:", err);
       alert("Failed to remove agent");
+    }
+  };
+
+  // Quick add precreated agent
+  const handleQuickAddAgent = async (agent: PrecreatedAgent) => {
+    setAddingAgentId(agent.id);
+    setError("");
+
+    try {
+      const response = await fetch("/api/agents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: agent.url }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to register agent");
+        return;
+      }
+
+      // Success - refresh list and close dialog
+      await fetchAgents();
+      setShowAddDialog(false);
+      setError("");
+    } catch (err) {
+      console.error("Failed to add agent:", err);
+      setError("Failed to register agent. Make sure the agent is running.");
+    } finally {
+      setAddingAgentId(null);
     }
   };
 
@@ -252,11 +285,65 @@ export default function AgentsPage() {
 
       {/* Add Agent Dialog */}
       {showAddDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h2 className="text-xl font-semibold text-[#010507] mb-4">Add A2A Agent</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full shadow-xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-semibold text-[#010507] mb-6">Add A2A Agent</h2>
 
+            {/* Quick Add Section */}
+            <div className="mb-6">
+              <h3 className="text-sm font-semibold text-[#838389] mb-3">QUICK ADD</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {PRECREATED_AGENTS.map((agent) => {
+                  const isAdding = addingAgentId === agent.id;
+                  const isAlreadyAdded = agents.some(a => a.url === agent.url);
+
+                  return (
+                    <div
+                      key={agent.id}
+                      className="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-[#DBDBE5] hover:border-[#6366f1] transition-all"
+                    >
+                      <div className="text-3xl mb-2">{agent.icon}</div>
+                      <h4 className="text-sm font-semibold text-[#010507] mb-1">
+                        {agent.name}
+                      </h4>
+                      <p className="text-xs text-[#57575B] mb-3 line-clamp-2">
+                        {agent.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#838389] font-mono">
+                          :{agent.port}
+                        </span>
+                        <button
+                          onClick={() => handleQuickAddAgent(agent)}
+                          disabled={isAdding || isAlreadyAdded}
+                          className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${
+                            isAlreadyAdded
+                              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                              : "bg-[#6366f1] text-white hover:bg-[#5558e3]"
+                          } disabled:opacity-50`}
+                        >
+                          {isAdding ? "Adding..." : isAlreadyAdded ? "Added" : "Add"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="relative mb-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[#DBDBE5]"></div>
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-white px-3 text-[#838389] font-medium">OR</span>
+              </div>
+            </div>
+
+            {/* Custom Agent Section */}
             <div className="mb-4">
+              <h3 className="text-sm font-semibold text-[#838389] mb-3">CUSTOM AGENT</h3>
               <label className="block text-sm font-medium text-[#57575B] mb-2">
                 Agent URL
               </label>
@@ -269,7 +356,7 @@ export default function AgentsPage() {
                 disabled={validatingAgent}
               />
               <p className="text-xs text-[#838389] mt-1">
-                Enter the base URL of the A2A agent to register
+                Enter the base URL of any A2A protocol agent
               </p>
             </div>
 
@@ -285,18 +372,19 @@ export default function AgentsPage() {
                   setShowAddDialog(false);
                   setNewAgentUrl("");
                   setError("");
+                  setAddingAgentId(null);
                 }}
                 className="flex-1 px-4 py-2 border border-[#DBDBE5] text-[#57575B] rounded-lg hover:bg-gray-50 transition-colors"
-                disabled={validatingAgent}
+                disabled={validatingAgent || addingAgentId !== null}
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddAgent}
                 className="flex-1 px-4 py-2 bg-[#6366f1] text-white rounded-lg hover:bg-[#5558e3] transition-colors font-medium disabled:opacity-50"
-                disabled={validatingAgent}
+                disabled={validatingAgent || addingAgentId !== null}
               >
-                {validatingAgent ? "Validating..." : "Add Agent"}
+                {validatingAgent ? "Validating..." : "Add Custom Agent"}
               </button>
             </div>
           </div>

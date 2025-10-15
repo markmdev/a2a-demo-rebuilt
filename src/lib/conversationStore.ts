@@ -105,24 +105,27 @@ class ConversationStore {
   /**
    * Upsert a message (add if new, update if exists)
    * Handles streaming messages where content updates over time
+   * @returns Object with success status and whether the message was new
    */
-  upsertMessage(id: string, message: Message): boolean {
+  upsertMessage(id: string, message: Message): { success: boolean; isNewMessage: boolean } {
     const conversation = this.conversations.get(id);
-    if (!conversation) return false;
+    if (!conversation) return { success: false, isNewMessage: false };
 
     // Find existing message by ID
     const existingIndex = conversation.messages.findIndex(m => m.id === message.id);
 
+    let isNewMessage = false;
     if (existingIndex >= 0) {
       // Update existing message
       conversation.messages[existingIndex] = message;
     } else {
       // Add new message
       conversation.messages.push(message);
+      isNewMessage = true;
     }
 
     conversation.messageCount = conversation.messages.length;
-    return true;
+    return { success: true, isNewMessage };
   }
 }
 
