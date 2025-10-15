@@ -82,8 +82,24 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
         throw new Error("Failed to log event");
       }
 
-      // Add to local state for real-time updates
-      setEvents((prev) => [...prev, event]);
+      // Add to local state for real-time updates (with deduplication)
+      setEvents((prev) => {
+        // Deduplicate USER_MESSAGE and ASSISTANT_MESSAGE events by messageId
+        if (event.type === EventType.USER_MESSAGE || event.type === EventType.ASSISTANT_MESSAGE) {
+          const existingEvent = prev.find(
+            (e) =>
+              (e.type === EventType.USER_MESSAGE || e.type === EventType.ASSISTANT_MESSAGE) &&
+              e.messageId === event.messageId
+          );
+
+          if (existingEvent) {
+            // Event with this messageId already exists, skip adding
+            return prev;
+          }
+        }
+
+        return [...prev, event];
+      });
     } catch (err) {
       console.error("Error logging event:", err);
     }

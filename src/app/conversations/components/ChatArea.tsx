@@ -190,7 +190,7 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
               initial:
                 "👋 Welcome to the A2A Protocol Demo!\n\nI orchestrate specialized agents to demonstrate Agent-to-Agent communication.\n\nTry asking:\n\n• \"Plan my weekend in San Francisco\"\n\n• \"What's the weather like in Tokyo next week?\"\n\n• \"Suggest activities for a rainy day in Paris\"",
             }}
-            instructions="You are a helpful orchestrator assistant that coordinates with specialized agents using A2A protocol. When users ask for information, delegate to appropriate agents like Weather Agent, Activities Agent, or Weekend Planner using the send_message_to_a2a_agent action."
+            instructions="You are a helpful orchestrator assistant that coordinates with specialized agents using A2A protocol"
           />
         </div>
       </div>
