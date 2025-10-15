@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { CopilotKit } from "@copilotkit/react-core";
 import { useConversation } from "@/lib/contexts/ConversationContext";
 
@@ -17,8 +18,18 @@ interface DynamicCopilotWrapperProps {
  * Falls back to a default threadId when no conversation is active.
  */
 export default function DynamicCopilotWrapper({ children }: DynamicCopilotWrapperProps) {
-  const { getActiveConversation } = useConversation();
-  const activeConversation = getActiveConversation();
+  const pathname = usePathname();
+  const { conversations } = useConversation();
+
+  // Extract conversation ID from pathname
+  const conversationId = pathname.startsWith("/conversations/")
+    ? pathname.split("/")[2]
+    : null;
+
+  // Find the active conversation
+  const activeConversation = conversationId
+    ? conversations.find((c) => c.id === conversationId)
+    : undefined;
 
   // Use the conversation's threadId, or fall back to default
   const threadId = activeConversation?.threadId || "default_thread";

@@ -5,9 +5,15 @@
  * Shared between API routes and CopilotKit endpoint.
  */
 
-// In-memory agent registry
-// Persists during server lifetime, resets on restart
-export const registeredAgentUrls = new Set<string>();
+// Singleton pattern for HMR survival in development
+// This prevents losing registered agents during Fast Refresh/HMR
+// Still resets on server restart (as intended)
+declare global {
+  // eslint-disable-next-line no-var
+  var __registeredAgentUrls: Set<string> | undefined;
+}
+
+export const registeredAgentUrls = globalThis.__registeredAgentUrls ??= new Set<string>();
 
 // Initialize with default agents from environment
 // const defaultWeatherAgent = process.env.WEATHER_AGENT_URL || 'http://localhost:9005';

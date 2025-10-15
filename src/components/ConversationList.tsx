@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter, usePathname } from "next/navigation";
 import { useConversation } from "@/lib/contexts/ConversationContext";
 import { formatDistanceToNow } from "@/lib/utils";
 
@@ -10,23 +11,32 @@ import { formatDistanceToNow } from "@/lib/utils";
  * - "+ New Conversation" button at the top
  * - Scrollable list of conversations
  * - Active conversation highlighted in indigo
- * - Click handlers to switch conversations
+ * - Router navigation to switch conversations
  */
 export default function ConversationList() {
+  const router = useRouter();
+  const pathname = usePathname();
   const {
     conversations,
-    activeConversationId,
     loading,
     createConversation,
-    setActiveConversation,
   } = useConversation();
 
+  // Extract active conversation ID from pathname
+  const activeConversationId = pathname.startsWith("/conversations/")
+    ? pathname.split("/")[2]
+    : null;
+
   const handleCreateConversation = async () => {
-    await createConversation();
+    const newConversation = await createConversation();
+    if (newConversation) {
+      // Navigate to the new conversation
+      router.push(`/conversations/${newConversation.id}`);
+    }
   };
 
   const handleSelectConversation = (id: string) => {
-    setActiveConversation(id);
+    router.push(`/conversations/${id}`);
   };
 
   return (

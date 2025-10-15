@@ -1,17 +1,17 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { Conversation } from "@/types/conversation";
+import { Conversation, Message } from "@/types/conversation";
 
 interface ConversationContextType {
   conversations: Conversation[];
-  activeConversationId: string | null;
   loading: boolean;
   error: string | null;
   fetchConversations: () => Promise<void>;
   createConversation: () => Promise<Conversation | null>;
-  setActiveConversation: (id: string | null) => void;
-  getActiveConversation: () => Conversation | undefined;
+  fetchMessages: (conversationId: string) => Promise<Message[]>;
+  addMessage: (conversationId: string, message: Message) => Promise<boolean>;
+  upsertMessage: (conversationId: string, message: Message) => Promise<boolean>;
 }
 
 const ConversationContext = createContext<ConversationContextType | undefined>(undefined);
@@ -24,7 +24,6 @@ const ConversationContext = createContext<ConversationContextType | undefined>(u
  */
 export function ConversationProvider({ children }: { children: React.ReactNode }) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,7 +72,6 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
 
       // Update local state
       setConversations((prev) => [newConversation, ...prev]);
-      setActiveConversationId(newConversation.id);
 
       return newConversation;
     } catch (err) {
@@ -84,19 +82,81 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
   }, []);
 
   /**
-   * Set the active conversation
+   * Fetch messages for a specific conversation
    */
-  const setActiveConversation = useCallback((id: string | null) => {
-    setActiveConversationId(id);
+  const fetchMessages = useCallback(async (conversationId: string): Promise<Message[]> => {
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}/messages`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch messages");
+      }
+
+      const data = await response.json();
+      return data.messages || [];
+    } catch (err) {
+      console.error("Error fetching messages:", err);
+      return [];
+    }
   }, []);
 
   /**
-   * Get the currently active conversation object
+   * Add a message to a conversation
    */
-  const getActiveConversation = useCallback((): Conversation | undefined => {
-    if (!activeConversationId) return undefined;
-    return conversations.find((c) => c.id === activeConversationId);
-  }, [activeConversationId, conversations]);
+  const addMessage = useCallback(async (conversationId: string, message: Message): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add message");
+      }
+
+      // Update the local conversation's messageCount
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === conversationId
+            ? { ...conv, messageCount: conv.messageCount + 1 }
+            : conv
+        )
+      );
+
+      return true;
+    } catch (err) {
+      console.error("Error adding message:", err);
+      return false;
+    }
+  }, []);
+
+  /**
+   * Upsert a message (add if new, update if exists)
+   * Used for streaming messages where content updates over time
+   */
+  const upsertMessage = useCallback(async (conversationId: string, message: Message): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message, upsert: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to upsert message");
+      }
+
+      return true;
+    } catch (err) {
+      console.error("Error upserting message:", err);
+      return false;
+    }
+  }, []);
 
   // Fetch conversations on mount
   useEffect(() => {
@@ -105,13 +165,13 @@ export function ConversationProvider({ children }: { children: React.ReactNode }
 
   const value: ConversationContextType = {
     conversations,
-    activeConversationId,
     loading,
     error,
     fetchConversations,
     createConversation,
-    setActiveConversation,
-    getActiveConversation,
+    fetchMessages,
+    addMessage,
+    upsertMessage,
   };
 
   return (

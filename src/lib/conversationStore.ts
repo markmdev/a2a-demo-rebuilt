@@ -1,4 +1,4 @@
-import { Conversation } from "@/types/conversation";
+import { Conversation, Message } from "@/types/conversation";
 
 /**
  * In-memory conversation store
@@ -38,6 +38,7 @@ class ConversationStore {
       threadId,
       createdAt: new Date().toISOString(),
       messageCount: 0,
+      messages: [],
     };
 
     this.conversations.set(id, conversation);
@@ -62,7 +63,75 @@ class ConversationStore {
   delete(id: string): boolean {
     return this.conversations.delete(id);
   }
+
+  /**
+   * Get all messages for a conversation
+   */
+  getMessages(id: string): Message[] {
+    const conversation = this.conversations.get(id);
+    return conversation?.messages || [];
+  }
+
+  /**
+   * Add a message to a conversation
+   * Automatically updates messageCount
+   */
+  addMessage(id: string, message: Message): boolean {
+    const conversation = this.conversations.get(id);
+    if (!conversation) return false;
+
+    conversation.messages.push(message);
+    conversation.messageCount = conversation.messages.length;
+
+    return true;
+  }
+
+  /**
+   * Add multiple messages to a conversation
+   */
+  addMessages(id: string, messages: Message[]): boolean {
+    const conversation = this.conversations.get(id);
+    if (!conversation) return false;
+
+
+    messages.forEach((message) => {
+      conversation.messages.push(message);
+    });
+
+    conversation.messageCount = conversation.messages.length;
+    return true;
+  }
+
+  /**
+   * Upsert a message (add if new, update if exists)
+   * Handles streaming messages where content updates over time
+   */
+  upsertMessage(id: string, message: Message): boolean {
+    const conversation = this.conversations.get(id);
+    if (!conversation) return false;
+
+    // Find existing message by ID
+    const existingIndex = conversation.messages.findIndex(m => m.id === message.id);
+
+    if (existingIndex >= 0) {
+      // Update existing message
+      conversation.messages[existingIndex] = message;
+    } else {
+      // Add new message
+      conversation.messages.push(message);
+    }
+
+    conversation.messageCount = conversation.messages.length;
+    return true;
+  }
 }
 
-// Module-level singleton instance
-export const conversationStore = new ConversationStore();
+// Singleton pattern for HMR survival in development
+// This prevents losing conversations during Fast Refresh/HMR
+// Still resets on server restart (as intended)
+declare global {
+  // eslint-disable-next-line no-var
+  var __conversationStore: ConversationStore | undefined;
+}
+
+export const conversationStore = globalThis.__conversationStore ??= new ConversationStore();

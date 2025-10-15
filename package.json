@@ -7,7 +7,7 @@
     "dev:agent": "cd agents && npx @langchain/langgraph-cli dev --port 8123 --no-browser",
     "dev:ui": "next dev",
     "dev:orchestrator": "cd agents && .venv/bin/python orchestrator.py",
-    "dev:weather": "bash -c 'cd agents && source .venv/bin/activate && python weather_agent.py'",
+    "dev:weather": "cd agents && .venv/bin/python weather_agent.py",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
