@@ -1,0 +1,22 @@
+# A2A Protocol and AG-UI
+a2a-sdk>=0.3.0
+ag-ui-adk>=0.0.1
+
+# Google ADK and Gemini
+google-genai>=1.9.0
+google-adk==1.15.1
+
+# LangChain and LangGraph (for potential mixed agents)
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langgraph>=0.2.0
+
+# Web framework
+fastapi>=0.115.0
+uvicorn>=0.34.0
+starlette>=0.41.0
+
+# Utilities
+pydantic>=2.11.0
+python-dotenv>=1.0.0
+httpx>=0.28.1
