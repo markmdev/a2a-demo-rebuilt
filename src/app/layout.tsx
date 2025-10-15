@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { CopilotKit } from "@copilotkit/react-core";
 import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
+import { ConversationProvider } from "@/lib/contexts/ConversationContext";
+import DynamicCopilotWrapper from "@/components/DynamicCopilotWrapper";
 
 export const metadata: Metadata = {
   title: "A2A Demo - Agent Communication",
@@ -16,15 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <CopilotKit
-          runtimeUrl="/api/copilotkit"
-          agent="orchestrator"
-          // agent="world_agent"
-          threadId="user_1"
-          showDevConsole={true}
-        >
-          {children}
-        </CopilotKit>
+        <ConversationProvider>
+          <DynamicCopilotWrapper>
+            {children}
+          </DynamicCopilotWrapper>
+        </ConversationProvider>
       </body>
     </html>
   );
