@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "@copilotkit/react-ui/styles.css";
 import { ConversationProvider } from "@/lib/contexts/ConversationContext";
+import { EventProvider } from "@/lib/contexts/EventContext";
 import DynamicCopilotWrapper from "@/components/DynamicCopilotWrapper";
 
 export const metadata: Metadata = {
@@ -18,9 +19,11 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <ConversationProvider>
-          <DynamicCopilotWrapper>
-            {children}
-          </DynamicCopilotWrapper>
+          <EventProvider>
+            <DynamicCopilotWrapper>
+              {children}
+            </DynamicCopilotWrapper>
+          </EventProvider>
         </ConversationProvider>
       </body>
     </html>

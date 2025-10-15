@@ -21,12 +21,16 @@ import uvicorn
 from fastapi import FastAPI
 from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
 from google.adk.agents import LlmAgent
+from datetime import date
 
+today = date.today()
+formatted_date = today.strftime("%Y-%m-%d")
 # Create the main orchestrator agent
+
 orchestrator_agent = LlmAgent(
     name="OrchestratorAgent",
     model="gemini-2.5-flash",
-    instruction="""
+    instruction=f"""
     You are a helpful AI assistant powering an A2A (Agent-to-Agent) communication demo.
 
     Your role is to:
@@ -35,7 +39,7 @@ orchestrator_agent = LlmAgent(
 
     Be friendly, informative, and demonstrate the power of agent-to-agent communication.
     When users ask about agents, explain how the A2A protocol enables different AI systems
-    to work together seamlessly.
+    to work together seamlessly. Today is {formatted_date}
     """,
 )
 

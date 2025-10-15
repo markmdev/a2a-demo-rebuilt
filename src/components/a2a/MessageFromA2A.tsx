@@ -150,7 +150,7 @@ export const MessageFromA2A: React.FC<MessageFromA2AProps> = ({
             <summary className="text-xs text-blue-700 font-medium cursor-pointer hover:text-blue-800 transition-colors">
               View response data
             </summary>
-            <pre className="mt-2 p-3 bg-white/50 rounded-lg text-xs text-gray-800 overflow-x-auto border border-blue-100">
+            <pre className="mt-2 p-3 bg-white/50 rounded-lg text-xs text-gray-800 overflow-x-auto border border-blue-100 max-w-full">
               {formatResult(result)}
             </pre>
           </details>

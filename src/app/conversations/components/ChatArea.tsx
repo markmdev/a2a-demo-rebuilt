@@ -6,6 +6,7 @@ import { useCopilotAction, useCopilotChat, ActionRenderProps } from "@copilotkit
 import { MessageToA2A } from "@/components/a2a/MessageToA2A";
 import { MessageFromA2A } from "@/components/a2a/MessageFromA2A";
 import { useConversation } from "@/lib/contexts/ConversationContext";
+import { useEvents } from "@/lib/contexts/EventContext";
 import { Message, Conversation } from "@/types/conversation";
 
 /**
@@ -50,9 +51,13 @@ interface ChatAreaProps {
  */
 export default function ChatArea({ conversation, initialMessages }: ChatAreaProps) {
     const { upsertMessage } = useConversation();
+    const { logUserMessage, logAssistantMessage, updateAssistantMessage } = useEvents();
 
     // Track saved messages by ID -> content for detecting changes
     const savedMessagesRef = useRef<Map<string, string>>(new Map());
+
+    // Track message IDs to event IDs (for updating events instead of creating duplicates)
+    const messageEventIdsRef = useRef<Map<string, string>>(new Map());
 
     // Use CopilotChat hook with static initialMessages from props
     const { visibleMessages } = useCopilotChat({
@@ -88,9 +93,36 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
 
           await upsertMessage(conversation.id, message);
           savedMessagesRef.current.set(msg.id, msg.content);
+
+          // Log or update events
+          if (msg.content.trim()) {
+            if (msg.role === "user") {
+              // User messages are logged once (they don't stream)
+              if (!messageEventIdsRef.current.has(msg.id)) {
+                const eventId = await logUserMessage(conversation.id, msg.id, msg.content);
+                if (eventId) {
+                  messageEventIdsRef.current.set(msg.id, eventId);
+                }
+              }
+            } else if (msg.role === "assistant") {
+              // Assistant messages: create event on first appearance, update on subsequent changes
+              const existingEventId = messageEventIdsRef.current.get(msg.id);
+
+              if (existingEventId) {
+                // Update existing event with new content (streaming update)
+                await updateAssistantMessage(conversation.id, existingEventId, msg.content);
+              } else {
+                // Create new event for this message
+                const eventId = await logAssistantMessage(conversation.id, msg.id, msg.content);
+                if (eventId) {
+                  messageEventIdsRef.current.set(msg.id, eventId);
+                }
+              }
+            }
+          }
         }
       });
-    }, [visibleMessages, conversation, upsertMessage]);
+    }, [visibleMessages, conversation, upsertMessage, logUserMessage, logAssistantMessage, updateAssistantMessage]);
 
     // Register A2A message visualizer (renders green/blue communication boxes)
     useCopilotAction({
@@ -112,6 +144,10 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
       render: (actionRenderProps: MessageActionRenderProps) => {
         return (
           <>
+            <A2AEventLogger
+              conversationId={conversation.id}
+              actionRenderProps={actionRenderProps}
+            />
             <MessageToA2A {...actionRenderProps} />
             <MessageFromA2A {...actionRenderProps} />
           </>
@@ -120,7 +156,7 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
     });
 
     return (
-      <div className="w-full border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
+      <div className="w-full h-full border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
         {/* Chat Header */}
         <div className="p-6 border-b border-[#DBDBE5]">
           <h1 className="text-2xl font-semibold text-[#010507] mb-1">
@@ -136,7 +172,7 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
         </div>
 
         {/* Chat Component */}
-        <div className="overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           <CopilotChat
             key={conversation.threadId}
             className="h-full"
@@ -149,4 +185,53 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
         </div>
       </div>
     );
-  };
+  }
+
+/**
+ * A2AEventLogger Component
+ *
+ * Tracks A2A action status changes and logs events
+ * - Logs A2A_CALL when status changes to "executing"
+ * - Logs A2A_RESPONSE when status changes to "complete"
+ */
+function A2AEventLogger({
+  conversationId,
+  actionRenderProps,
+}: {
+  conversationId: string;
+  actionRenderProps: MessageActionRenderProps;
+}) {
+  const { logA2ACall, logA2AResponse } = useEvents();
+  const previousStatusRef = useRef<string | undefined>(undefined);
+  const callStartTimeRef = useRef<number>(0);
+
+  const { args, status, result } = actionRenderProps;
+  const agentName = args?.agentName || "Unknown Agent";
+  const task = args?.task || "Unknown Task";
+
+  // Generate a stable action ID based on args (for linking call and response)
+  const actionId = useRef(`a2a_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
+  useEffect(() => {
+    const currentStatus = status;
+    const previousStatus = previousStatusRef.current;
+
+    // Log A2A call when status changes to "executing"
+    if (currentStatus === "executing" && previousStatus !== "executing") {
+      callStartTimeRef.current = Date.now();
+      logA2ACall(conversationId, actionId.current, agentName, task);
+    }
+
+    // Log A2A response when status changes to "complete"
+    if (currentStatus === "complete" && previousStatus !== "complete") {
+      const durationMs = Date.now() - callStartTimeRef.current;
+      const resultText = typeof result === "string" ? result : JSON.stringify(result || "");
+      logA2AResponse(conversationId, actionId.current, agentName, task, resultText, durationMs, "success");
+    }
+
+    previousStatusRef.current = currentStatus;
+  }, [status, conversationId, agentName, task, result, logA2ACall, logA2AResponse]);
+
+  // This component doesn't render anything visible
+  return null;
+}

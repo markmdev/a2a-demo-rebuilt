@@ -186,11 +186,48 @@ export default function AgentsPage() {
                         </div>
                         {agent.skills && agent.skills.length > 0 && (
                           <div className="mt-4">
-                            <p className="text-xs font-semibold text-[#838389] mb-2">SKILLS:</p>
-                            <div className="space-y-1">
+                            <p className="text-xs font-semibold text-[#838389] mb-3">SKILLS:</p>
+                            <div className="space-y-3">
                               {agent.skills.map((skill) => (
-                                <div key={skill.id} className="text-sm text-[#57575B]">
-                                  • {skill.name}
+                                <div key={skill.id} className="bg-white/40 backdrop-blur-sm rounded-lg p-4 border border-[#DBDBE5]">
+                                  <h4 className="text-sm font-semibold text-[#010507] mb-2">
+                                    {skill.name}
+                                  </h4>
+
+                                  {skill.description && (
+                                    <p className="text-sm text-[#57575B] mb-3">
+                                      {skill.description}
+                                    </p>
+                                  )}
+
+                                  {skill.tags && skill.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5 mb-3">
+                                      {skill.tags.map((tag) => (
+                                        <span
+                                          key={tag}
+                                          className="px-2 py-0.5 bg-[#6366f1]/10 text-[#6366f1] text-xs font-medium rounded"
+                                        >
+                                          {tag}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {skill.examples && skill.examples.length > 0 && (
+                                    <div>
+                                      <p className="text-xs font-medium text-[#838389] mb-2">Examples:</p>
+                                      <div className="space-y-1">
+                                        {skill.examples.map((example, idx) => (
+                                          <div
+                                            key={idx}
+                                            className="text-xs font-mono text-[#57575B] bg-[#010507]/5 rounded px-2 py-1.5 overflow-x-auto"
+                                          >
+                                            {example}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>

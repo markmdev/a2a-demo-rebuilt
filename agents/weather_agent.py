@@ -60,6 +60,12 @@ class StructuredWeather(BaseModel):
     bestDays: List[int] = Field(description="Best days for outdoor activities based on weather")
 
 
+class WeatherRequest(BaseModel):
+    """Input format for weather agent requests"""
+    city: str = Field(description="Destination city/location")
+    dates: List[str] = Field(description="List of dates for forecast (e.g., ['2025-10-20', '2025-10-21'])")
+
+
 class WeatherAgent:
     def __init__(self):
         self._agent = self._build_agent()
@@ -83,10 +89,9 @@ class WeatherAgent:
 You are a weather forecast agent for travelers. Your role is to provide realistic weather
 predictions and help travelers prepare for weather conditions.
 
-When you receive a request, analyze:
+You will receive a structured request specifying:
 - The destination city/location
-- Travel dates or trip duration
-- Any specific weather concerns mentioned
+- Specific dates for the forecast
 
 Return ONLY a valid JSON object with this exact structure:
 {
@@ -186,53 +191,6 @@ Return ONLY valid JSON, no markdown code blocks, no other text.
             })
 
 
-port = int(os.getenv("WEATHER_PORT", 9005))
-
-skill = AgentSkill(
-    id='weather_agent',
-    name='Weather Forecast Agent',
-    description='Provides weather forecasts and travel weather advice using ADK',
-    tags=['travel', 'weather', 'forecast', 'climate', 'adk'],
-    examples=[
-        'What will the weather be like in Tokyo next week?',
-        'Should I pack an umbrella for my Paris trip?',
-        'Give me the weather forecast for my 5-day New York visit'
-    ],
-)
-
-public_agent_card = AgentCard(
-    name='Weather Agent',
-    description='ADK-powered agent that provides weather forecasts and packing advice for travelers',
-    url=f'http://localhost:{port}/',
-    version='1.0.0',
-    defaultInputModes=['text'],
-    defaultOutputModes=['text'],
-    capabilities=AgentCapabilities(streaming=True),
-    skills=[skill],
-    supportsAuthenticatedExtendedCard=False,
-)
-
-
-class WeatherAgentExecutor(AgentExecutor):
-    def __init__(self):
-        self.agent = WeatherAgent()
-
-    async def execute(
-        self,
-        context: RequestContext,
-        event_queue: EventQueue,
-    ) -> None:
-        query = context.get_user_input()
-        session_id = getattr(context, 'context_id', 'default_session')
-        final_content = await self.agent.invoke(query, session_id)
-        await event_queue.enqueue_event(new_agent_text_message(final_content))
-
-    async def cancel(
-        self, context: RequestContext, event_queue: EventQueue
-    ) -> None:
-        raise Exception('cancel not supported')
-
-
 # Build the A2A Starlette app.
 # Set the public URL via env so cards don’t point at localhost.
 base_url = os.getenv("WEATHER_PUBLIC_URL")  # e.g. https://your-app.vercel.app/api/itinerary
@@ -240,12 +198,12 @@ base_url = os.getenv("WEATHER_PUBLIC_URL")  # e.g. https://your-app.vercel.app/a
 skill = AgentSkill(
     id='weather_agent',
     name='Weather Forecast Agent',
-    description='Provides weather forecasts and travel weather advice using ADK',
+    description='Provides weather forecasts and travel weather advice using ADK. Expects JSON input with city and dates fields.',
     tags=['travel', 'weather', 'forecast', 'climate', 'adk'],
     examples=[
-        'What will the weather be like in Tokyo next week?',
-        'Should I pack an umbrella for my Paris trip?',
-        'Give me the weather forecast for my 5-day New York visit'
+        '{"city": "Tokyo", "dates": ["2025-10-20", "2025-10-21", "2025-10-22"]}',
+        '{"city": "Paris", "dates": ["2025-11-15", "2025-11-16"]}',
+        '{"city": "New York", "dates": ["2025-12-01", "2025-12-02", "2025-12-03", "2025-12-04", "2025-12-05"]}'
     ],
 )
 
@@ -270,10 +228,41 @@ class WeatherAgentExecutor(AgentExecutor):
         context: RequestContext,
         event_queue: EventQueue,
     ) -> None:
-        query = context.get_user_input()
-        session_id = getattr(context, 'context_id', 'default_session')
-        final_content = await self.agent.invoke(query, session_id)
-        await event_queue.enqueue_event(new_agent_text_message(final_content))
+        try:
+            # Parse and validate JSON input
+            raw_input = context.get_user_input()
+            input_data = json.loads(raw_input)
+            weather_request = WeatherRequest(**input_data)
+
+            # Format structured request into prompt for ADK agent
+            dates_str = ", ".join(weather_request.dates)
+            query = f"Provide a weather forecast for {weather_request.city} for the following dates: {dates_str}"
+
+            session_id = getattr(context, 'context_id', 'default_session')
+            final_content = await self.agent.invoke(query, session_id)
+            await event_queue.enqueue_event(new_agent_text_message(final_content))
+
+        except json.JSONDecodeError as e:
+            error_msg = json.dumps({
+                "error": "Invalid JSON input",
+                "message": f"Failed to parse input as JSON: {str(e)}",
+                "expected_format": {
+                    "city": "string",
+                    "dates": ["YYYY-MM-DD", "..."]
+                }
+            })
+            await event_queue.enqueue_event(new_agent_text_message(error_msg))
+
+        except Exception as e:
+            error_msg = json.dumps({
+                "error": "Invalid input format",
+                "message": str(e),
+                "expected_format": {
+                    "city": "string",
+                    "dates": ["YYYY-MM-DD", "..."]
+                }
+            })
+            await event_queue.enqueue_event(new_agent_text_message(error_msg))
 
     async def cancel(
         self, context: RequestContext, event_queue: EventQueue

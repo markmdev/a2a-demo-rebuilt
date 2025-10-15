@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@a2a-js/sdk": "latest",
-    "@ag-ui/a2a-middleware": "latest",
+    "@ag-ui/a2a-middleware": "file:a2a-middleware",
     "@ag-ui/client": "0.0.40",
     "@ag-ui/langgraph": "^0.0.18",
     "@copilotkit/react-core": "latest",

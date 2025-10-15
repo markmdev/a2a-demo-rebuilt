@@ -3,11 +3,14 @@
  *
  * Server Component that fetches conversation and messages before rendering.
  * This eliminates race conditions by ensuring data is ready before ChatArea mounts.
+ *
+ * Layout: Split view with Chat (left) and Events (right)
  */
 
 import { notFound } from "next/navigation";
 import { conversationStore } from "@/lib/conversationStore";
 import ChatArea from "../components/ChatArea";
+import EventPanel from "../components/EventPanel";
 
 interface ConversationPageProps {
   params: Promise<{ id: string }>;
@@ -30,12 +33,21 @@ export default async function ConversationPage({ params }: ConversationPageProps
   // Fetch messages for this conversation
   const messages = conversationStore.getMessages(id);
 
-  // Render ChatArea with fetched data
-  // Component will mount with all data ready - no race conditions
+  // Render split view: ChatArea (left) + EventPanel (right)
   return (
-    <ChatArea
-      conversation={conversation}
-      initialMessages={messages}
-    />
+    <div className="grid grid-cols-[1fr_400px] gap-2 w-full h-full">
+      {/* Left: Chat Area (takes remaining space, constrained by grid) */}
+      <div className="min-w-0 overflow-hidden h-screen">
+        <ChatArea
+          conversation={conversation}
+          initialMessages={messages}
+        />
+      </div>
+
+      {/* Right: Event Panel (fixed 400px by grid) */}
+      <div className="h-screen">
+        <EventPanel conversationId={id} />
+      </div>
+    </div>
   );
 }
