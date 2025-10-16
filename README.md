@@ -26,6 +26,7 @@ This demo shows a multi-agent system where:
 - **Node.js** 18+ (for the Next.js frontend)
 - **Python** 3.10+ (for ADK agents)
 - **[Google API Key](https://aistudio.google.com/app/apikey)** (for Gemini models)
+- **[CopilotKit License Key](https://cloud.copilotkit.ai/)** (free for AG-UI integration)
 
 ## Quick Start
 
@@ -47,18 +48,23 @@ cd ..
 
 ```bash
 # Copy the example environment files
-cp .env.example .env.local
+cp .env.example .env
 cp agents/.env.example agents/.env
 
-# Edit both files and add your Google API key
+# Edit both files and add your API keys
 # .env.local - for Next.js frontend
 # agents/.env - for Python agents
 ```
 
-Both files need your Google API key:
-```bash
-GOOGLE_API_KEY=your_google_api_key_here
-```
+**Required API Keys:**
+
+1. **Google API Key** (for Gemini models)
+   - Get yours at: https://aistudio.google.com/app/apikey
+   - Add to `agents/.env` only
+
+2. **CopilotKit License Key** (for AG-UI integration)
+   - Get your free key at: https://cloud.copilotkit.ai/
+   - Add to `.env` only
 
 ### 3. Start the Application
 
