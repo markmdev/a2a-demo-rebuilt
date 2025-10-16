@@ -87,6 +87,13 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
         isProcessingRef.current = true;
         try {
           for (const msg of visibleMessages) {
+            // Skip tool-related messages (tool calls and tool results)
+            // Tool calls: assistant messages with toolCalls property
+            // Tool results: messages with role "tool"
+            if (msg.role === "tool" || (msg as any).toolCalls) {
+              continue;
+            }
+
             const lastSavedContent = savedMessagesRef.current.get(msg.id);
 
             // Save if: (1) new message OR (2) content changed (streaming update)
