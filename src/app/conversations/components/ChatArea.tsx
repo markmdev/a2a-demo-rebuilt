@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { CopilotChat } from "@copilotkit/react-ui";
-import { useCopilotAction, useCopilotChat, ActionRenderProps } from "@copilotkit/react-core";
+import { useCopilotAction, ActionRenderProps, useCopilotChatHeadless_c } from "@copilotkit/react-core";
 import { MessageToA2A } from "@/components/a2a/MessageToA2A";
 import { MessageFromA2A } from "@/components/a2a/MessageFromA2A";
 import { useConversation } from "@/lib/contexts/ConversationContext";
@@ -60,10 +60,13 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
     // Track message IDs to event IDs (for updating events instead of creating duplicates)
     const messageEventIdsRef = useRef<Map<string, string>>(new Map());
 
-    // Use CopilotChat hook with static initialMessages from props
-    const { visibleMessages } = useCopilotChat({
-      initialMessages,
-    });
+    const { messages: visibleMessages, setMessages } = useCopilotChatHeadless_c();
+
+    console.log(initialMessages);
+
+    useEffect(() => {
+      setMessages(initialMessages);
+    }, [initialMessages, setMessages]);
 
     // Initialize savedMessagesRef with initial messages on mount
     useEffect(() => {
@@ -75,60 +78,63 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
     }, []); // Only on mount
 
     // Sync messages to server when content changes (detects streaming updates)
+    const isProcessingRef = useRef(false);
     useEffect(() => {
+      console.log(visibleMessages);
       // Process messages sequentially to avoid race conditions
       const syncMessages = async () => {
-        for (const msg of visibleMessages) {
-          // Only process TextMessages (which have content property)
-          if (!msg.isTextMessage()) {
-            continue;
-          }
+        if (isProcessingRef.current) return;
+        isProcessingRef.current = true;
+        try {
+          for (const msg of visibleMessages) {
+            const lastSavedContent = savedMessagesRef.current.get(msg.id);
 
-          const lastSavedContent = savedMessagesRef.current.get(msg.id);
+            // Save if: (1) new message OR (2) content changed (streaming update)
+            if (lastSavedContent !== msg.content) {
+              // Skip empty assistant messages (streaming placeholders that get replaced)
+              if (msg.role === "assistant" && msg.content === "") {
+                continue;
+              }
 
-          // Save if: (1) new message OR (2) content changed (streaming update)
-          if (lastSavedContent !== msg.content) {
-            // Skip empty assistant messages (streaming placeholders that get replaced)
-            if (msg.role === "assistant" && msg.content === "") {
-              continue;
-            }
+              const message: Message = {
+                id: msg.id,
+                role: msg.role as "user" | "assistant",
+                content: msg.content || "",
+              };
 
-            const message: Message = {
-              id: msg.id,
-              role: msg.role as "user" | "assistant",
-              content: msg.content,
-            };
+              await upsertMessage(conversation.id, message);
+              savedMessagesRef.current.set(msg.id, msg.content || "");
 
-            await upsertMessage(conversation.id, message);
-            savedMessagesRef.current.set(msg.id, msg.content);
-
-            // Log or update events
-            if (msg.content.trim()) {
-              if (msg.role === "user") {
-                // User messages are logged once (they don't stream)
-                if (!messageEventIdsRef.current.has(msg.id)) {
-                  const eventId = await logUserMessage(conversation.id, msg.id, msg.content);
-                  if (eventId) {
-                    messageEventIdsRef.current.set(msg.id, eventId);
+              // Log or update events
+              if ((msg.content || "").trim()) {
+                if (msg.role === "user") {
+                  // User messages are logged once (they don't stream)
+                  if (!messageEventIdsRef.current.has(msg.id)) {
+                    const eventId = await logUserMessage(conversation.id, msg.id, msg.content);
+                    if (eventId) {
+                      messageEventIdsRef.current.set(msg.id, eventId);
+                    }
                   }
-                }
-              } else if (msg.role === "assistant") {
-                // Assistant messages: create event on first appearance, update on subsequent changes
-                const existingEventId = messageEventIdsRef.current.get(msg.id);
+                } else if (msg.role === "assistant") {
+                  // Assistant messages: create event on first appearance, update on subsequent changes
+                  const existingEventId = messageEventIdsRef.current.get(msg.id);
 
-                if (existingEventId) {
-                  // Update existing event with new content (streaming update)
-                  await updateAssistantMessage(conversation.id, existingEventId, msg.content);
-                } else {
-                  // Create new event for this message
-                  const eventId = await logAssistantMessage(conversation.id, msg.id, msg.content);
-                  if (eventId) {
-                    messageEventIdsRef.current.set(msg.id, eventId);
+                  if (existingEventId) {
+                    // Update existing event with new content (streaming update)
+                    await updateAssistantMessage(conversation.id, existingEventId, msg.content || "");
+                  } else {
+                    // Create new event for this message
+                    const eventId = await logAssistantMessage(conversation.id, msg.id, msg.content || "");
+                    if (eventId) {
+                      messageEventIdsRef.current.set(msg.id, eventId);
+                    }
                   }
                 }
               }
             }
           }
+        } finally {
+          isProcessingRef.current = false;
         }
       };
 

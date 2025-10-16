@@ -41,6 +41,7 @@ export default function DynamicCopilotWrapper({ children }: DynamicCopilotWrappe
       agent="orchestrator"
       threadId={threadId}
       showDevConsole={true}
+      publicLicenseKey="ck_pub_402cb543767b46a34a097c418a82b99e"
     >
       {children}
     </CopilotKit>
