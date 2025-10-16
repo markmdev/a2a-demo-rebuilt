@@ -2,6 +2,8 @@
 
 A demonstration of the **A2A (Agent-to-Agent) Protocol** using **CopilotKit (AG-UI)**, **Google ADK**, and **Gemini**. This application showcases how AI agents can communicate seamlessly through standardized protocols.
 
+![Demo gif](A2A_Demo.gif)
+
 ## What This Demonstrates
 
 This demo shows a multi-agent system where:
