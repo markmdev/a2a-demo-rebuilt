@@ -3,8 +3,12 @@
  *
  * Defines the demo agents that are part of this A2A showcase.
  * These agents can be quickly added from the Agents page UI.
+ * Each agent runs on a specific port and communicates via the A2A Protocol.
  */
 
+/**
+ * Represents a preconfigured A2A agent available for quick registration
+ */
 export interface PrecreatedAgent {
   id: string;
   name: string;
@@ -49,14 +53,34 @@ export const PRECREATED_AGENTS: PrecreatedAgent[] = [
 ];
 
 /**
- * Get a precreated agent by ID
+ * Get a precreated agent by its ID
+ *
+ * @param id - The unique identifier of the agent (e.g., "weather", "activities")
+ * @returns The precreated agent configuration, or undefined if not found
+ *
+ * @example
+ * ```typescript
+ * const weatherAgent = getPrecreatedAgent('weather');
+ * if (weatherAgent) {
+ *   console.log(weatherAgent.url); // "http://localhost:9005"
+ * }
+ * ```
  */
 export function getPrecreatedAgent(id: string): PrecreatedAgent | undefined {
   return PRECREATED_AGENTS.find(agent => agent.id === id);
 }
 
 /**
- * Check if a URL matches a precreated agent
+ * Check if a URL matches one of the precreated agents
+ *
+ * @param url - The URL to check (trailing slashes are normalized)
+ * @returns True if the URL matches a precreated agent, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const isPrecreated = isPrecreatedAgentUrl('http://localhost:9005');
+ * console.log(isPrecreated); // true (matches weather agent)
+ * ```
  */
 export function isPrecreatedAgentUrl(url: string): boolean {
   const normalizedUrl = url.replace(/\/$/, '');

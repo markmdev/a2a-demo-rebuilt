@@ -8,6 +8,7 @@ import { MessageFromA2A } from "@/components/a2a/MessageFromA2A";
 import { useConversation } from "@/lib/contexts/ConversationContext";
 import { useEvents } from "@/lib/contexts/EventContext";
 import { Message, Conversation } from "@/types/conversation";
+import { generateActionId } from "@/lib/utils";
 
 /**
  * Type for the send_message_to_a2a_agent action parameters
@@ -219,8 +220,8 @@ function A2AEventLogger({
   const agentName = args?.agentName || "Unknown Agent";
   const task = args?.task || "Unknown Task";
 
-  // Generate a stable action ID based on args (for linking call and response)
-  const actionId = useRef(`a2a_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  // Generate a stable action ID (for linking call and response)
+  const actionId = useRef(generateActionId());
 
   useEffect(() => {
     const currentStatus = status;

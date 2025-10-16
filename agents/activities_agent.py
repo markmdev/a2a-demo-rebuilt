@@ -72,6 +72,22 @@ class ActivitiesRequest(BaseModel):
 
 
 class ActivitiesAgent:
+    """
+    Activity recommendation agent powered by Google ADK and Gemini.
+
+    This agent suggests activities based on weather conditions and user preferences
+    using the A2A Protocol. It accepts structured JSON inputs with location,
+    dates, and weather data, returning personalized activity recommendations.
+
+    The agent uses Google's Gemini model to generate activity suggestions that
+    match weather conditions and travel preferences.
+
+    Attributes:
+        _agent: The underlying LlmAgent instance
+        _user_id: User ID for session management
+        _runner: ADK Runner for executing the agent
+    """
+
     def __init__(self):
         self._agent = self._build_agent()
         self._user_id = 'remote_agent'

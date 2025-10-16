@@ -10,6 +10,7 @@ import {
   A2AResponseEvent,
   ErrorEvent,
 } from "@/types/event";
+import { generateEventId } from "@/lib/utils";
 
 interface EventContextType {
   events: Event[];
@@ -110,7 +111,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
    */
   const logUserMessage = useCallback(async (conversationId: string, messageId: string, content: string): Promise<string | null> => {
     const event: UserMessageEvent = {
-      id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: generateEventId(),
       conversationId,
       timestamp: new Date().toISOString(),
       type: EventType.USER_MESSAGE,
@@ -127,7 +128,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
    */
   const logAssistantMessage = useCallback(async (conversationId: string, messageId: string, content: string): Promise<string | null> => {
     const event: AssistantMessageEvent = {
-      id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: generateEventId(),
       conversationId,
       timestamp: new Date().toISOString(),
       type: EventType.ASSISTANT_MESSAGE,
@@ -163,11 +164,12 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
 
       // Update local state
       setEvents((prev) =>
-        prev.map((event) =>
-          event.id === eventId
-            ? { ...event, content: content as any } // Type assertion needed due to discriminated union
-            : event
-        )
+        prev.map((event) => {
+          if (event.id === eventId && (event.type === EventType.ASSISTANT_MESSAGE || event.type === EventType.USER_MESSAGE)) {
+            return { ...event, content };
+          }
+          return event;
+        })
       );
     } catch (err) {
       console.error("Error updating event:", err);
@@ -179,7 +181,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
    */
   const logA2ACall = useCallback(async (conversationId: string, actionId: string, agentName: string, task: string) => {
     const event: A2ACallEvent = {
-      id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: generateEventId(),
       conversationId,
       timestamp: new Date().toISOString(),
       type: EventType.A2A_CALL,
@@ -204,7 +206,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
     status: "success" | "error" = "success"
   ) => {
     const event: A2AResponseEvent = {
-      id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: generateEventId(),
       conversationId,
       timestamp: new Date().toISOString(),
       type: EventType.A2A_RESPONSE,
@@ -224,7 +226,7 @@ export function EventProvider({ children }: { children: React.ReactNode }) {
    */
   const logError = useCallback(async (conversationId: string, message: string, details?: string, relatedEventId?: string) => {
     const event: ErrorEvent = {
-      id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: generateEventId(),
       conversationId,
       timestamp: new Date().toISOString(),
       type: EventType.ERROR,

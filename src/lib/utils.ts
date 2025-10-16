@@ -32,6 +32,39 @@ export function generateId(): string {
 }
 
 /**
+ * Generate a unique event ID
+ * @returns Event ID with format: evt_{timestamp}_{random}
+ */
+export function generateEventId(): string {
+  return `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Generate a unique conversation ID
+ * @returns Conversation ID with format: conv_{timestamp}_{random}
+ */
+export function generateConversationId(): string {
+  return `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
+ * Generate a unique thread ID from a conversation ID
+ * @param conversationId - The conversation ID to generate a thread ID for
+ * @returns Thread ID with format: thread_{conversationId}
+ */
+export function generateThreadId(conversationId: string): string {
+  return `thread_${conversationId}`;
+}
+
+/**
+ * Generate a unique action ID for A2A calls
+ * @returns Action ID with format: a2a_{timestamp}_{random}
+ */
+export function generateActionId(): string {
+  return `a2a_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+/**
  * Format date as relative time (e.g., "2 minutes ago", "1 hour ago")
  */
 export function formatDistanceToNow(date: Date): string {

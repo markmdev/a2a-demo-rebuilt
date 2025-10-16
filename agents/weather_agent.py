@@ -67,6 +67,22 @@ class WeatherRequest(BaseModel):
 
 
 class WeatherAgent:
+    """
+    Weather forecasting agent powered by Google ADK and Gemini.
+
+    This agent provides weather forecasts for travel destinations using
+    the A2A Protocol. It accepts structured JSON inputs with city and dates,
+    and returns realistic weather predictions with travel advice.
+
+    The agent uses Google's Gemini model to generate weather forecasts based
+    on typical weather patterns for the destination and season.
+
+    Attributes:
+        _agent: The underlying LlmAgent instance
+        _user_id: User ID for session management
+        _runner: ADK Runner for executing the agent
+    """
+
     def __init__(self):
         self._agent = self._build_agent()
         self._user_id = 'remote_agent'
@@ -79,6 +95,12 @@ class WeatherAgent:
         )
 
     def _build_agent(self) -> LlmAgent:
+        """
+        Build and configure the LlmAgent for weather forecasting.
+
+        Returns:
+            LlmAgent: Configured agent with weather forecasting instructions
+        """
         model_name = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
 
         return LlmAgent(
@@ -129,6 +151,23 @@ Return ONLY valid JSON, no markdown code blocks, no other text.
         )
 
     async def invoke(self, query: str, session_id: str) -> str:
+        """
+        Process a weather forecast request and return structured JSON.
+
+        Args:
+            query: Natural language query with destination and dates
+            session_id: Unique session identifier for conversation tracking
+
+        Returns:
+            str: JSON string with structured weather forecast including:
+                - destination: City/location
+                - forecast: Array of daily weather predictions
+                - travelAdvice: Packing and planning recommendations
+                - bestDays: List of best days for outdoor activities
+
+        Raises:
+            Exception: If weather forecast generation fails
+        """
         session = await self._runner.session_service.get_session(
             app_name=self._agent.name,
             user_id=self._user_id,
@@ -220,6 +259,20 @@ public_agent_card = AgentCard(
 )
 
 class WeatherAgentExecutor(AgentExecutor):
+    """
+    A2A Protocol executor for the Weather Agent.
+
+    This class implements the AgentExecutor interface required by the A2A Protocol.
+    It handles incoming A2A requests, validates JSON input, and delegates to the
+    WeatherAgent for processing.
+
+    The executor expects JSON input with the following structure:
+        {
+            "city": "string",
+            "dates": ["YYYY-MM-DD", ...]
+        }
+    """
+
     def __init__(self):
         self.agent = WeatherAgent()
 

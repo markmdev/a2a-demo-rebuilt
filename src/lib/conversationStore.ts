@@ -1,4 +1,5 @@
 import { Conversation, Message } from "@/types/conversation";
+import { generateConversationId, generateThreadId } from "@/lib/utils";
 
 /**
  * In-memory conversation store
@@ -29,8 +30,8 @@ class ConversationStore {
    */
   create(): Conversation {
     this.conversationCounter++;
-    const id = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const threadId = `thread_${id}`;
+    const id = generateConversationId();
+    const threadId = generateThreadId(id);
 
     const conversation: Conversation = {
       id,

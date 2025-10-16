@@ -3,11 +3,18 @@
  *
  * Utilities for fetching and validating A2A agent metadata.
  * Agent cards provide information about agent capabilities and identity.
+ *
+ * @see {@link https://github.com/agent-matrix/a2a|A2A Protocol Documentation}
  */
 
-// Standard well-known path for A2A agent cards
+/**
+ * Standard well-known path for A2A agent cards per the A2A specification
+ */
 const AGENT_CARD_WELL_KNOWN_PATH = '/.well-known/agent-card.json';
 
+/**
+ * Represents an A2A agent's metadata and capabilities
+ */
 export interface AgentCard {
   name: string;
   description: string;
@@ -29,10 +36,18 @@ export interface AgentCard {
 }
 
 /**
- * Fetch agent card metadata from an A2A agent's well-known endpoint
+ * Fetch agent card metadata from an A2A agent's well-known endpoint.
+ * The agent card is fetched from the /.well-known/agent-card.json path.
  *
- * @param url - The base URL of the A2A agent
- * @returns The agent card metadata
+ * @param url - The base URL of the A2A agent (e.g., "http://localhost:9005")
+ * @returns Promise resolving to the agent card metadata
+ * @throws Error if the agent card cannot be fetched or is invalid
+ *
+ * @example
+ * ```typescript
+ * const agentCard = await fetchAgentCard('http://localhost:9005');
+ * console.log(agentCard.name); // "Weather Agent"
+ * ```
  */
 export async function fetchAgentCard(url: string): Promise<AgentCard> {
   // Normalize URL (remove trailing slash, ensure protocol)
@@ -79,10 +94,19 @@ export async function fetchAgentCard(url: string): Promise<AgentCard> {
 }
 
 /**
- * Validate that a URL is a valid A2A agent endpoint
+ * Validate that a URL is a valid A2A agent endpoint by attempting
+ * to fetch its agent card.
  *
  * @param url - The URL to validate
- * @returns True if the URL is valid
+ * @returns Promise resolving to true if the agent card can be fetched, false otherwise
+ *
+ * @example
+ * ```typescript
+ * const isValid = await validateAgentUrl('http://localhost:9005');
+ * if (isValid) {
+ *   console.log('Agent is reachable');
+ * }
+ * ```
  */
 export async function validateAgentUrl(url: string): Promise<boolean> {
   try {

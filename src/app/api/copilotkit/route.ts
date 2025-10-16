@@ -55,33 +55,8 @@ export async function POST(request: NextRequest) {
     // The orchestrator that will coordinate A2A communication
     orchestrationAgent,
 
-    // Workflow instructions for the orchestrator
-    // instructions: `
-    //   You are an A2A communication orchestrator that coordinates with specialized agents.
-
-    //   WORKFLOW:
-
-    //   1. Understand the user's request
-    //   2. Determine which specialized agent(s) can help
-    //   3. Use 'send_message_to_a2a_agent' tool to communicate with agents
-    //   4. Wait for agent responses before proceeding
-    //   5. Synthesize information from multiple agents if needed
-    //   6. Present results to the user in a clear, organized way
-
-    //   CRITICAL RULES:
-
-    //   - Call agents ONE AT A TIME - never make multiple tool calls simultaneously
-    //   - Wait for each agent's response before making the next call
-    //   - Always provide context when delegating to agents
-    //   - Format agent responses as structured JSON when possible
-    //   - Be conversational and helpful when presenting results to users
-
-    //   Remember: You're the coordinator. Let the specialized agents do their jobs,
-    //   then help the user understand and act on the information.
-
-    //   NOTE: Available agents are dynamically registered. Use the send_message_to_a2a_agent
-    //   tool to discover and communicate with available specialized agents.
-    // `,
+    // The orchestrator agent's instructions are defined in the orchestrator.py file
+    // This keeps agent behavior centralized and easier to maintain
     instructions: "You are a helpful assistant"
   });
 

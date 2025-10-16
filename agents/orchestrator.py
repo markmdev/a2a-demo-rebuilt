@@ -63,6 +63,6 @@ add_adk_fastapi_endpoint(app, adk_orchestrator_agent, path="/")
 if __name__ == "__main__":
     port = int(os.getenv("ORCHESTRATOR_PORT", 9000))
     print(f"🤖 Starting Orchestrator Agent on http://localhost:{port}")
-    print(f"   Model: gemini-2.0-flash-exp")
+    print(f"   Model: gemini-2.5-flash")
     print(f"   Protocol: AG-UI + A2A")
     uvicorn.run(app, host="0.0.0.0", port=port)

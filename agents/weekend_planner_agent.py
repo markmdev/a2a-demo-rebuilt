@@ -77,6 +77,22 @@ class WeekendPlannerRequest(BaseModel):
 
 
 class WeekendPlannerAgent:
+    """
+    Weekend planning agent powered by Google ADK and Gemini.
+
+    This agent creates comprehensive weekend itineraries by synthesizing weather
+    forecasts and activity recommendations. It uses the A2A Protocol to receive
+    structured inputs and returns well-organized day-by-day plans.
+
+    The agent uses Google's Gemini model to create cohesive weekend plans that
+    balance activities, weather considerations, and travel logistics.
+
+    Attributes:
+        _agent: The underlying LlmAgent instance
+        _user_id: User ID for session management
+        _runner: ADK Runner for executing the agent
+    """
+
     def __init__(self):
         self._agent = self._build_agent()
         self._user_id = 'remote_agent'
