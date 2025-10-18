@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { CopilotChat } from "@copilotkit/react-ui";
-import { useCopilotAction, ActionRenderProps, useCopilotChatHeadless_c } from "@copilotkit/react-core";
+import { useCopilotAction, ActionRenderProps, useCopilotChat } from "@copilotkit/react-core";
 import { MessageToA2A } from "@/components/a2a/MessageToA2A";
 import { MessageFromA2A } from "@/components/a2a/MessageFromA2A";
 import { useConversation } from "@/lib/contexts/ConversationContext";
@@ -54,19 +54,47 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
     const { upsertMessage } = useConversation();
     const { logUserMessage, logAssistantMessage, updateAssistantMessage } = useEvents();
 
+    // Notification permission state
+    const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>("default");
+
     // Track saved messages by ID -> content for detecting changes
     const savedMessagesRef = useRef<Map<string, string>>(new Map());
 
     // Track message IDs to event IDs (for updating events instead of creating duplicates)
     const messageEventIdsRef = useRef<Map<string, string>>(new Map());
 
-    const { messages: visibleMessages, setMessages } = useCopilotChatHeadless_c();
+    const { visibleMessages, isLoading, stopGeneration } = useCopilotChat({
+      initialMessages
+    });
 
-    console.log(initialMessages);
-
+    // Request notification permission on mount
     useEffect(() => {
-      setMessages(initialMessages);
-    }, [initialMessages, setMessages]);
+      if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission().then(setNotificationPermission);
+      } else if ("Notification" in window) {
+        setNotificationPermission(Notification.permission);
+      }
+    }, []);
+
+    // Handle notification when response completes
+    const handleInProgress = useCallback((inProgress: boolean) => {
+      // When generation completes (inProgress becomes false) and tab not in focus
+      console.log(inProgress);
+      console.log(document.hasFocus());
+      console.log(notificationPermission);
+      if (!inProgress && !document.hasFocus() && notificationPermission === "granted") {
+        console.log("NOTIFICATION!");
+        new Notification("Response Ready", {
+          body: `Your conversation "${conversation.name}" has a new response`,
+          icon: "/favicon.ico",
+          tag: conversation.id,
+        });
+      }
+    }, [conversation, notificationPermission]);
+
+    // useEffect(() => {
+    //   setMessages(initialMessages);
+    // }, [initialMessages, setMessages]);
 
     // Initialize savedMessagesRef with initial messages on mount
     useEffect(() => {
@@ -179,20 +207,42 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
       },
     });
 
+    // Handle abort
+    const handleAbort = () => {
+      if (stopGeneration) {
+        stopGeneration();
+      }
+      console.log("Aborted current response and all A2A calls");
+    };
+
     return (
       <div className="w-full h-full border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
         {/* Chat Header */}
-        <div className="p-6 border-b border-[#DBDBE5]">
-          <h1 className="text-2xl font-semibold text-[#010507] mb-1">
-            {conversation.name}
-          </h1>
-          <p className="text-sm text-[#57575B] leading-relaxed">
-            Multi-Agent demonstration with{" "}
-            <span className="text-[#6366f1] font-semibold">ADK agents</span>
-          </p>
-          <p className="text-xs text-[#838389] mt-1">
-            Orchestrator-mediated A2A Protocol
-          </p>
+        <div className="p-6 border-b border-[#DBDBE5] flex items-start justify-between">
+          <div className="flex-1">
+            <h1 className="text-2xl font-semibold text-[#010507] mb-1">
+              {conversation.name}
+            </h1>
+            <p className="text-sm text-[#57575B] leading-relaxed">
+              Multi-Agent demonstration with{" "}
+              <span className="text-[#6366f1] font-semibold">ADK agents</span>
+            </p>
+            <p className="text-xs text-[#838389] mt-1">
+              Orchestrator-mediated A2A Protocol
+            </p>
+          </div>
+          {/* Abort button - only shows when loading */}
+          {isLoading && (
+            <button
+              onClick={handleAbort}
+              className="px-3 py-1.5 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium flex items-center gap-2 flex-shrink-0"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Abort & Cancel
+            </button>
+          )}
         </div>
 
         {/* Chat Component */}
@@ -205,6 +255,7 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
                 "👋 Welcome to the A2A Protocol Demo!\n\nI orchestrate specialized agents to demonstrate Agent-to-Agent communication.\n\nTry asking:\n\n• \"Plan my weekend in San Francisco\"\n\n• \"What's the weather like in Tokyo next week?\"\n\n• \"Suggest activities for a rainy day in Paris\"",
             }}
             instructions="You are a helpful orchestrator assistant that coordinates with specialized agents using A2A protocol"
+            onInProgress={handleInProgress}
           />
         </div>
       </div>
