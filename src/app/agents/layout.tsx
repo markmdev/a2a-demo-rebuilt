@@ -1,17 +1,17 @@
 /**
- * Conversations Layout
+ * Agents Layout
  *
  * Persistent two-column layout:
  * [Conversation List 300px] [{children} flex-1]
  *
- * The conversation list remains mounted across navigation,
- * only the right column (children) changes when navigating to /conversations/[id]
+ * The conversation list (with tabs) remains mounted,
+ * children shows the agents content
  */
 
 import React from "react";
 import ConversationList from "@/components/ConversationList";
 
-export default function ConversationsLayout({
+export default function AgentsLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -46,7 +46,7 @@ export default function ConversationsLayout({
 
       {/* Two-Column Layout */}
       <div className="flex flex-1 overflow-hidden z-10 gap-2">
-        {/* Column 1: Conversation List (Persistent) */}
+        {/* Column 1: Conversation List with tabs (Persistent) */}
         <ConversationList />
 
         {/* Column 2: Dynamic Content Area (children) */}
