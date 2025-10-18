@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { CopilotChat } from "@copilotkit/react-ui";
-import { useCopilotAction, ActionRenderProps, useCopilotChatHeadless_c } from "@copilotkit/react-core";
+import { useCopilotAction, ActionRenderProps, useCopilotChatHeadless_c, useCopilotChat } from "@copilotkit/react-core";
 import { MessageToA2A } from "@/components/a2a/MessageToA2A";
 import { MessageFromA2A } from "@/components/a2a/MessageFromA2A";
 import { useConversation } from "@/lib/contexts/ConversationContext";
@@ -60,13 +60,15 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
     // Track message IDs to event IDs (for updating events instead of creating duplicates)
     const messageEventIdsRef = useRef<Map<string, string>>(new Map());
 
-    const { messages: visibleMessages, setMessages } = useCopilotChatHeadless_c();
+    const { visibleMessages } = useCopilotChat({
+      initialMessages
+    });
 
     console.log(initialMessages);
 
-    useEffect(() => {
-      setMessages(initialMessages);
-    }, [initialMessages, setMessages]);
+    // useEffect(() => {
+    //   setMessages(initialMessages);
+    // }, [initialMessages, setMessages]);
 
     // Initialize savedMessagesRef with initial messages on mount
     useEffect(() => {
