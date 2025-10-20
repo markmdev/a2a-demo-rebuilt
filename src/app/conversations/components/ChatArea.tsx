@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { CopilotChat } from "@copilotkit/react-ui";
 import { useCopilotAction, ActionRenderProps, useCopilotChat } from "@copilotkit/react-core";
 import { MessageToA2A } from "@/components/a2a/MessageToA2A";
@@ -66,6 +66,7 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
     const { visibleMessages, isLoading, stopGeneration } = useCopilotChat({
       initialMessages
     });
+    const [startedGeneration, setStartedGeneration] = useState(false);
 
     // Request notification permission on mount
     useEffect(() => {
@@ -76,25 +77,33 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
       }
     }, []);
 
-    // Handle notification when response completes
-    const handleInProgress = useCallback((inProgress: boolean) => {
-      // When generation completes (inProgress becomes false) and tab not in focus
-      console.log(inProgress);
-      console.log(document.hasFocus());
-      console.log(notificationPermission);
-      if (!inProgress && !document.hasFocus() && notificationPermission === "granted") {
-        console.log("NOTIFICATION!");
-        new Notification("Response Ready", {
-          body: `Your conversation "${conversation.name}" has a new response`,
-          icon: "/favicon.ico",
-          tag: conversation.id,
-        });
+    useEffect(() => {
+      if (isLoading && !startedGeneration) {
+        setStartedGeneration(true);
+        console.log("Started generation");
+        return
       }
-    }, [conversation, notificationPermission]);
-
-    // useEffect(() => {
-    //   setMessages(initialMessages);
-    // }, [initialMessages, setMessages]);
+      if (startedGeneration && !isLoading) {
+        setStartedGeneration(false);
+        console.log("Stopped generation");
+        if (notificationPermission === "granted" && !document.hasFocus()) {
+          try {
+            if ("Notification" in window) {
+              console.log("Sending a notification");
+              new Notification("Response Ready!", {
+                body: `Your conversation "${conversation.name}" has a new response`,
+                icon: "/favicon.ico",
+                silent: false,
+                requireInteraction: true
+              });
+            }
+          } catch (error) {
+            console.error("Failed to create notification:", error);
+          }
+          return;
+        }
+      }
+    }, [conversation.id, conversation.name, isLoading, notificationPermission, startedGeneration])
 
     // Initialize savedMessagesRef with initial messages on mount
     useEffect(() => {
@@ -212,9 +221,7 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
       if (stopGeneration) {
         stopGeneration();
       }
-      console.log("Aborted current response and all A2A calls");
     };
-
     return (
       <div className="w-full h-full border-2 border-white bg-white/50 backdrop-blur-md shadow-elevation-lg flex flex-col rounded-lg overflow-hidden">
         {/* Chat Header */}
@@ -255,7 +262,7 @@ export default function ChatArea({ conversation, initialMessages }: ChatAreaProp
                 "👋 Welcome to the A2A Protocol Demo!\n\nI orchestrate specialized agents to demonstrate Agent-to-Agent communication.\n\nTry asking:\n\n• \"Plan my weekend in San Francisco\"\n\n• \"What's the weather like in Tokyo next week?\"\n\n• \"Suggest activities for a rainy day in Paris\"",
             }}
             instructions="You are a helpful orchestrator assistant that coordinates with specialized agents using A2A protocol"
-            onInProgress={handleInProgress}
+            // onInProgress={handleInProgress}
           />
         </div>
       </div>

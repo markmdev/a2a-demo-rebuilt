@@ -24,8 +24,8 @@ export default function ConversationList() {
   } = useConversation();
 
   // Determine active tab based on pathname
-  const isConversationsTab = pathname.startsWith("/conversations");
-  const isAgentsTab = pathname.startsWith("/agents");
+  const isConversationsTab = pathname === "/conversations" || pathname.startsWith("/conversations/");
+  const isAgentsTab = pathname === "/agents" || pathname.startsWith("/agents/");
 
   // Extract active conversation ID from pathname
   const activeConversationId = pathname.startsWith("/conversations/")
