@@ -1,11 +1,5 @@
 /**
  * Agents Layout
- *
- * Persistent two-column layout:
- * [Conversation List 300px] [{children} flex-1]
- *
- * The conversation list (with tabs) remains mounted,
- * children shows the agents content
  */
 
 import React from "react";
